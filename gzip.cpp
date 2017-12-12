@@ -82,26 +82,55 @@ int main(int argc, char** argv)
 		//****** ADICIONAR PROGRAMA... *********************
 		//**************************************************
 		//1º ex
-    		read_block(&rb, &availBits, gzFile, &hlit, &hdist, &hclen);
-		//2º ex
-		int code_len[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    read_block(&rb, &availBits, gzFile, &hlit, &hdist, &hclen);
+		//2º ex - obter comprimentos dos codigos de huffman
+		unsigned int code_len[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 		int max;
 		max = store_array(&rb, &availBits, hclen, code_len, gzFile);
-		//3º ex
-		int codes[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+		printf("Comprimentos:\n");
+		/*for(i = 0; i< 19; i++) {
+			printf("%d, ", code_len[i]);
+		}*/
+		printf("\n");
+		//3º ex - cria arvore de huffman obtendo codigos atraves dos comprimentos
+		unsigned int codes[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 		HuffmanTree *hft = createHFTree();
-		huffman_codes(code_len, codes, max, hft);
+		huffman_codes(19, code_len, codes, max, hft);
 		//4º ex
-		unsigned int hlit_codes[hlit+257];
-		get_lengths(hft, &rb, &availBits, hlit+257, gzFile, hlit_codes);
+		unsigned int hlit_lens[hlit+257 + (286-(hlit+257))];
+		memset(hlit_lens, 0, (hlit+257 + (286-(hlit+257)))*sizeof(unsigned int));
+		get_lengths(hft, &rb, &availBits, hlit+257, gzFile, hlit_lens);
+		/*for(i = 0; i< (hlit+257 + (286-(hlit+257))); i++) {
+			printf("\n[%d] - [%d]", i, hlit_lens[i]);
+		}*/
 		//5º ex
-		unsigned int hdist_codes[hdist+1];
-		get_lengths(hft, &rb, &availBits, hdist+1, gzFile, hdist_codes);
+		unsigned int hdist_lens[hdist+1 + (30-(hdist+1))];
+		memset(hdist_lens, 0, (hdist+1 + (30-(hdist+1)))*sizeof(unsigned int));
+		get_lengths(hft, &rb, &availBits, hdist+1, gzFile, hdist_lens);
+		printf("\n\n\n------------------------------\n\n\n");
+		for(i = 0; i < (hdist+1 + (30-(hdist+1))); i++) {
+			printf("\n[%d] - [%d]", i, hdist_lens[i]);
+		}
+		printf("\n\n\n------------------------------\n\n\n");
 		//6º ex
-		unsigned int codesHLIT[hlit+257]
-		
-		
-		numBlocks++;
+		printf("\nHLEN:\n");
+		unsigned int HLIT_codes[hlit+267];
+		memset(HLIT_codes, 0, (hlit+267)*sizeof(unsigned int));
+		HuffmanTree *hft_HLIT = createHFTree();
+		huffman_codes(hlit+257 + (286-(hlit+257)), hlit_lens, HLIT_codes, max_in_array(hlit+267, hlit_lens), hft_HLIT);
+		/*printf("hlit code: \n");
+		for(i = 0; i<hlit+257; i++) {
+			printf("%d - %d -  %d \n", i,  hlit_lens[i], HLIT_codes[i]);
+		}*/
+		printf("\nHDIST:\n");
+		unsigned int HDIST_codes[30];
+		memset(HDIST_codes, 0, 30*sizeof(unsigned int));
+		HuffmanTree *hft_HDIST = createHFTree();
+		huffman_codes((hdist+1 + (30-(hdist+1))), hdist_lens, HDIST_codes, max_in_array(30, hdist_lens), hft_HDIST);
+		/*for(i = 0; i<hdist + 1; i++) {
+			printf("%d - %d -  %d \n", i,  hdist_lens[i], HDIST_codes[i]);
+		}*/
+		numBlocks+= 1;
 	}while(BFINAL == 0);
 
 
@@ -122,6 +151,16 @@ int main(int argc, char** argv)
 }
 //---------------------------------------------------------------
 //L� o cabe�alho do ficheiro gzip: devolve erro (-1) se o formato for inv�lidodevolve, ou 0 se ok
+int max_in_array(int len, unsigned int array[]) {
+	int x = array[0];
+	for (int i = 0; i< len; i++) {
+		if(array[i] > x) {
+			x = array[i];
+		}
+	}
+	return x;
+}
+
 int getHeader(FILE *gzFile, gzipHeader *gzh) //obt�m cabe�alho
 {
 	unsigned char byte;
@@ -343,7 +382,7 @@ void read_block(unsigned int *rb, char *availBits, FILE *gzFile, char *hlit, cha
 	(*availBits) -= 4;
 }
 
-int store_array(unsigned int *rb, char *availBits, char hclen, int *code_len, FILE *gzFile) {
+int store_array(unsigned int *rb, char *availBits, char hclen, unsigned int *code_len, FILE *gzFile) {
     int positions[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
     unsigned char byte;
     int i;
@@ -363,29 +402,28 @@ int store_array(unsigned int *rb, char *availBits, char hclen, int *code_len, FI
 
 char* toBinary(int n, int length) {
 	int i;
-    std::string str;
-    while(n!=0) {str=(n%2==0 ?"0":"1")+str; n/=2;}
-		char * writable = new char[length + 1];
-		//char * writable = new char[str.size() + 1];
-		for(i =0; i<str.size(); i++) {
-			writable[length-str.size()+i] = str.at(i);
-		}
-		//std::copy(str.begin(), str.end(), writable);
-		for(i=0; i<length-str.size(); i++) {
-			writable[i] = '0';
-		}
-		writable[length] = '\0'; // don't forget the terminating 0
+  std::string str;
+  while(n!=0) {str=(n%2==0 ?"0":"1")+str; n/=2;}
+	char * writable = new char[length + 1];
+	//char * writable = new char[str.size() + 1];
+	for(i =0; i<str.size(); i++) {
+		writable[length-str.size()+i] = str.at(i);
+	}
+	//std::copy(str.begin(), str.end(), writable);
+	for(i=0; i<length-str.size(); i++) {
+		writable[i] = '0';
+	}
+	writable[length] = '\0'; // don't forget the terminating 0
 
-		// don't forget to free the string after finished using it
-    return writable;
+	// don't forget to free the string after finished using it
+  return writable;
 }
 
-void huffman_codes (int *code_lengths, int *codes, int max, HuffmanTree* hft) {
+void huffman_codes (int len, unsigned int *code_lengths, unsigned int *codes, int max, HuffmanTree* hft) {
   int i, j = 0, code = 0;
-	char string[10];
   int verifica = 0;
   for(i=1; i<=max; i++) {
-	  for(j = 0; j<19; j++) {
+	  for(j = 0; j<len; j++) {
 	  	if(code_lengths[j] == i) {
 				verifica = 1;
 				codes[j] = code;
@@ -398,8 +436,9 @@ void huffman_codes (int *code_lengths, int *codes, int max, HuffmanTree* hft) {
 			verifica = 0;
 	  }
   }
-	for(i = 0; i < 19;i++) {
+	for(i = 0; i < len; i++) {
 		if(code_lengths[i] != 0){
+			//printf("%d-codes %d-%d-%s\n\n",i,code_lengths[i], codes[i],  toBinary(codes[i], code_lengths[i]));
 			addNode(hft, toBinary(codes[i], code_lengths[i]), i, 1);
 		}
 	}
@@ -407,9 +446,9 @@ void huffman_codes (int *code_lengths, int *codes, int max, HuffmanTree* hft) {
 void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, FILE *gzFile, unsigned int* codes) {
 	memset(codes, 0, size*sizeof(unsigned int));
 	int i_node, i = 0, j = 0, extraBits;
-    	unsigned int bit;
-    	while(i<size){
-		while(1){
+	unsigned int bit;
+	while(i<size){
+		while(1){//vai buscar bit ate chegar a uma folha
 			get_byte_from_block(rb, availBits, 1, gzFile);
 			bit = *rb&0x1;
 			*rb = *rb >> 1;
@@ -426,7 +465,7 @@ void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, F
 						codes[i] = i_node;
 						i++;
 					}
-					else if(i_node == 16){
+					else if(i_node == 16){ //se == 16 ver 2 bits a frente para saber quantas posiçoes sao iguais a anterior (3 a 6)
 						get_byte_from_block(rb, availBits, 2, gzFile);
 						extraBits = (*rb & 0x3) + 3;
 						*rb = *rb >> 2;
@@ -435,9 +474,9 @@ void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, F
 							codes[j] = codes[i-1];
 						}
 						i+=extraBits;
-						
+
 					}
-					else if(i_node == 17){	
+					else if(i_node == 17){ //se == 17 ver 3 bits a frente para saber quantas posiçoes sao 0 (3 a 10)
 						get_byte_from_block(rb, availBits, 3, gzFile);
 						extraBits = (*rb&0x7) + 3;
 						*rb = *rb >> 3;
@@ -447,7 +486,7 @@ void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, F
 						}
 						i+=extraBits;
 					}
-					else if(i_node == 18){
+					else if(i_node == 18){ //se ==18 ver 7 bits a frente para saber quantas posiçoes sao 0 (11 a 130)
 						get_byte_from_block(rb, availBits, 7, gzFile);
 						extraBits = (*rb&0x7F) + 11;
 						*rb = *rb >> 7;
@@ -462,8 +501,8 @@ void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, F
 			break;
 		    	}
 		}
-	}	
-	for(i = 0; i<size; i++) {
-		printf("[%d] - %d\n", i, codes[i]);
 	}
+	/*for(i = 0; i<size; i++) {
+		printf("[%d] - %d\n", i, codes[i]);
+	}*/
 }

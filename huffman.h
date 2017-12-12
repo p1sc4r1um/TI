@@ -28,5 +28,5 @@ int findNode(HuffmanTree *hft, char *s, HFNode *cur, short verbose);  //procura 
 short isLeaf(HFNode *n);
 void resetCurNode (HuffmanTree *hft);
 char* toBinary(int n);
-void huffman_codes (int *code_lengths, int *codes, int max, HuffmanTree* hft);
+void huffman_codes (int len, unsigned int *code_lengths, unsigned int *codes, int max, HuffmanTree* hft);
 void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, FILE *gzFile, unsigned int* codes);

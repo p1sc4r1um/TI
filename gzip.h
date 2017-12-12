@@ -33,4 +33,5 @@ int isDynamicHuffman(unsigned char rb);
 void bits2String(char *strBits, unsigned char byte);
 void get_byte_from_block(unsigned int *rb, char *availBits, char needBits, FILE *gzFile);
 void read_block(unsigned int *rb, char *availBits, FILE *gzFile, char *hlit, char *hdist, char *hclen);
-int store_array(unsigned int *rb, char *availBits, char hclen, int *code_len, FILE *gzFile);
+int store_array(unsigned int *rb, char *availBits, char hclen, unsigned int *code_len, FILE *gzFile);
+int max_in_array(int len, unsigned int array[]);
