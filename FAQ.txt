@@ -1,0 +1,39 @@
+
+		Frequently Asked Questions about zlib
+
+
+
+
+If your question is not there, please check the zlib home page 
+http://www.cdrom.com/pub/infozip/zlib/ which may have more recent information.
+
+
+
+
+1) I need a Windows DLL
+2) I need a Visual Basic interface to zlib
+3) compress() returns Z_BUF_ERROR
+4) deflate or inflate returns Z_BUF_ERROR
+5) Where is the zlib documentation (man pages, etc...)?
+6) Why don't you use GNU autoconf, libtool, etc...?
+7) There is a bug in zlib.
+8) I get "undefined reference to gzputc"
+
+
+
+
+
+
+1) I need a Windows DLL
+
+  The zlib sources can be compiled without change to produce a DLL.
+  If you want a precompiled DLL, see http://www.winimage.com/zLibDll
+
+
+
+
+
+2) I need a Visual Basic interface to zlib
+
+  See http://www.tcfb.com/dowseware/cmp-z-it.zip
+  

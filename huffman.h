@@ -30,3 +30,4 @@ void resetCurNode (HuffmanTree *hft);
 char* toBinary(int n);
 void huffman_codes (int len, unsigned int *code_lengths, unsigned int *codes, int max, HuffmanTree* hft);
 void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, FILE *gzFile, unsigned int* codes);
+void lz77(HuffmanTree *ht_LIT, HuffmanTree *ht_DIST, unsigned int *rb, char* availBits, char *chars, FILE *gzFile);

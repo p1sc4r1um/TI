@@ -53,6 +53,7 @@ int main(int argc, char** argv)
 
 	//--- Para todos os blocos encontrados
 	char BFINAL;
+	char* string = (char *)malloc(origFileSize);
 
 	do
 	{
@@ -82,15 +83,15 @@ int main(int argc, char** argv)
 		//****** ADICIONAR PROGRAMA... *********************
 		//**************************************************
 		//1º ex
-    read_block(&rb, &availBits, gzFile, &hlit, &hdist, &hclen);
+		read_block(&rb, &availBits, gzFile, &hlit, &hdist, &hclen);
 		//2º ex - obter comprimentos dos codigos de huffman
 		unsigned int code_len[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 		int max;
 		max = store_array(&rb, &availBits, hclen, code_len, gzFile);
-		printf("Comprimentos:\n");
-		/*for(i = 0; i< 19; i++) {
-			printf("%d, ", code_len[i]);
-		}*/
+		printf("\nComprimentos:\n");
+		for(i = 0; i< 19; i++) {
+			printf("%d\n ", code_len[i]);
+		}
 		printf("\n");
 		//3º ex - cria arvore de huffman obtendo codigos atraves dos comprimentos
 		unsigned int codes[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -100,14 +101,16 @@ int main(int argc, char** argv)
 		unsigned int hlit_lens[hlit+257 + (286-(hlit+257))];
 		memset(hlit_lens, 0, (hlit+257 + (286-(hlit+257)))*sizeof(unsigned int));
 		get_lengths(hft, &rb, &availBits, hlit+257, gzFile, hlit_lens);
-		/*for(i = 0; i< (hlit+257 + (286-(hlit+257))); i++) {
+		printf("lengths HLIT: \n");
+		for(i = 0; i< (hlit+257 + (286-(hlit+257))); i++) {
 			printf("\n[%d] - [%d]", i, hlit_lens[i]);
-		}*/
+		}
 		//5º ex
 		unsigned int hdist_lens[hdist+1 + (30-(hdist+1))];
 		memset(hdist_lens, 0, (hdist+1 + (30-(hdist+1)))*sizeof(unsigned int));
 		get_lengths(hft, &rb, &availBits, hdist+1, gzFile, hdist_lens);
 		printf("\n\n\n------------------------------\n\n\n");
+		printf("lengths HDIST: \n");
 		for(i = 0; i < (hdist+1 + (30-(hdist+1))); i++) {
 			printf("\n[%d] - [%d]", i, hdist_lens[i]);
 		}
@@ -130,6 +133,9 @@ int main(int argc, char** argv)
 		/*for(i = 0; i<hdist + 1; i++) {
 			printf("%d - %d -  %d \n", i,  hdist_lens[i], HDIST_codes[i]);
 		}*/
+
+		//7º ex
+		lz77(hft_HLIT, hft_HDIST, &rb, &availBits, string, gzFile);
 		numBlocks+= 1;
 	}while(BFINAL == 0);
 
@@ -137,8 +143,9 @@ int main(int argc, char** argv)
 	//terminações
 	fclose(gzFile);
 	printf("End: %d bloco(s) analisado(s).\n", numBlocks);
-
-
+	FILE* f = fopen(gzh.fName, "w");
+	fprintf(f,"%s", string);
+	fclose(f);
     //teste da função bits2String: RETIRAR antes de criar o executável final
 	char str[9];
 	bits2String(str, 0x03);
@@ -243,7 +250,7 @@ int getHeader(FILE *gzFile, gzipHeader *gzh) //obt�m cabe�alho
 		do
 		{
 			fread(&byte, 1, 1, gzFile);
-			if (i <= 1023)  //guarda no m�ximo 1024 caracteres no array
+			if (i <= 1023)  //guarda no m�ximo 1024 string no array
 				(*gzh).fName[i] = byte;
 			i++;
 		}while(byte != 0);
@@ -261,7 +268,7 @@ int getHeader(FILE *gzFile, gzipHeader *gzh) //obt�m cabe�alho
 		do
 		{
 			fread(&byte, 1, 1, gzFile);
-			if (i <= 1023)  //guarda no m�ximo 1024 caracteres no array
+			if (i <= 1023)  //guarda no m�ximo 1024 string no array
 				(*gzh).fComment[i] = byte;
 			i++;
 		}while(byte != 0);
@@ -421,20 +428,15 @@ char* toBinary(int n, int length) {
 
 void huffman_codes (int len, unsigned int *code_lengths, unsigned int *codes, int max, HuffmanTree* hft) {
   int i, j = 0, code = 0;
-  int verifica = 0;
   for(i=1; i<=max; i++) {
 	  for(j = 0; j<len; j++) {
 	  	if(code_lengths[j] == i) {
-				verifica = 1;
 				codes[j] = code;
 				code +=1;
 	  	}
 	  }
-	  if (verifica==1) {
-			code--;
-	  	code = (code+1) * 2;
-			verifica = 0;
-	  }
+		code--;
+  	code = (code+1) * 2;
   }
 	for(i = 0; i < len; i++) {
 		if(code_lengths[i] != 0){
@@ -505,4 +507,100 @@ void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, F
 	/*for(i = 0; i<size; i++) {
 		printf("[%d] - %d\n", i, codes[i]);
 	}*/
+}
+
+void lz77(HuffmanTree *ht_LIT, HuffmanTree *ht_DIST, unsigned int *rb, char* availBits, char *string, FILE *gzFile) {
+	int extra_length[] = {
+	11, 13, 15, 17, 19, 23, 27,
+	31, 35, 43, 51, 59, 67, 83,
+	99, 115, 131, 163, 195, 227
+	};
+	int extra_dist[] = {
+	5, 7, 9, 13, 17, 25, 33, 49, 65,
+	97, 129, 193, 257, 385, 513, 769,
+	1025, 1537, 2049, 3073, 4097,
+	6145, 8193, 12289, 16385, 24577
+	};
+	int i, pos, bits, index = 0, debug = 0, debug2 = 0;
+	while(1){
+		debug++;
+		bits=readNbits(1,availBits,rb,gzFile);
+		pos=nextNode(ht_LIT,'0'+bits);
+		if (pos >=-1){
+			if (pos<256){
+				string[index++]=pos;
+				printf("-> %c\n",string[index-1]);
+			}
+			else if(pos==256){
+				break;
+			}
+			else{
+				int length;
+				if (pos<265){
+						length = pos - 254;
+				}
+				else if(pos<285){
+					bits=readNbits((pos-261)/4,availBits,rb,gzFile);
+					length = bits + extra_length[pos - 265];
+				}
+				else{
+					length=258;
+				}
+				int dist;
+				while(1){
+					bits=readNbits(1,availBits,rb,gzFile);
+					pos=nextNode(ht_DIST,'0'+bits);
+					if (pos>=0){
+						dist=pos+1;
+						if (pos>3){
+							bits=readNbits((pos-2)/2, availBits, rb, gzFile);
+							dist = bits + extra_dist[pos - 4] + 1;
+						}
+						printf("length: %d\ndist: %d\n",length, dist);
+						for(i=0; i<length; i++){
+							string[index+i] = string[index-dist+i+1];
+							printf("pos+i: %d, distancia a recuar: %d, cara: %c\n", index+i, dist, string[index-dist+i]);
+						}
+						index += length;
+						break;
+					}
+				}
+			}
+
+		resetCurNode(ht_LIT);
+		resetCurNode(ht_DIST);
+		}
+	}
+	/*«for(i = 0; i<100; i++) {
+		printf("%c\n",string[i]);
+	}*/
+}
+
+int readNbits(int nbits, char* availBits, unsigned int* rb, FILE* gzFile){
+
+    unsigned char byte;
+    if(nbits <= 0)
+        return 0;
+
+    //caso não existam bits suficientes para ler, vai ler mais um byte do ficheiro
+    while (*availBits < nbits)
+    {
+        fread(&byte, 1, 1, gzFile);
+        *rb = (byte << *availBits) | *rb;
+        *availBits += 8;
+    }
+
+    //criar uma mascara com N bits
+    unsigned int m=0;
+    for(int i=0; i<nbits; i++){
+        m = m << 1;
+        m = m | 0x01;
+    }
+    unsigned int bits = *rb & m;
+
+    //descarta os bits lidos
+    *rb = *rb >> nbits;
+    *availBits -= nbits;
+
+    return bits;
 }
