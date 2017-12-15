@@ -90,12 +90,13 @@ int main(int argc, char** argv)
 		max = store_array(&rb, &availBits, hclen, code_len, gzFile);
 		printf("\nComprimentos:\n");
 		for(i = 0; i< 19; i++) {
-			printf("%d\n ", code_len[i]);
+			printf("%d\n", code_len[i]);
 		}
 		printf("\n");
 		//3º ex - cria arvore de huffman obtendo codigos atraves dos comprimentos
 		unsigned int codes[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 		HuffmanTree *hft = createHFTree();
+		printf("1ª árvore:\n");
 		huffman_codes(19, code_len, codes, max, hft);
 		//4º ex
 		unsigned int hlit_lens[hlit+257 + (286-(hlit+257))];
@@ -109,30 +110,24 @@ int main(int argc, char** argv)
 		unsigned int hdist_lens[hdist+1 + (30-(hdist+1))];
 		memset(hdist_lens, 0, (hdist+1 + (30-(hdist+1)))*sizeof(unsigned int));
 		get_lengths(hft, &rb, &availBits, hdist+1, gzFile, hdist_lens);
-		printf("\n\n\n------------------------------\n\n\n");
-		printf("lengths HDIST: \n");
-		for(i = 0; i < (hdist+1 + (30-(hdist+1))); i++) {
+		printf("\nlengths HDIST: \n");
+		for(i = 0; i< (hdist+1 + (30-(hdist+1))); i++) {
 			printf("\n[%d] - [%d]", i, hdist_lens[i]);
 		}
-		printf("\n\n\n------------------------------\n\n\n");
 		//6º ex
 		printf("\nHLEN:\n");
 		unsigned int HLIT_codes[hlit+267];
 		memset(HLIT_codes, 0, (hlit+267)*sizeof(unsigned int));
 		HuffmanTree *hft_HLIT = createHFTree();
+		printf("\n2ª árvore:\n");
 		huffman_codes(hlit+257 + (286-(hlit+257)), hlit_lens, HLIT_codes, max_in_array(hlit+267, hlit_lens), hft_HLIT);
-		/*printf("hlit code: \n");
-		for(i = 0; i<hlit+257; i++) {
-			printf("%d - %d -  %d \n", i,  hlit_lens[i], HLIT_codes[i]);
-		}*/
 		printf("\nHDIST:\n");
 		unsigned int HDIST_codes[30];
 		memset(HDIST_codes, 0, 30*sizeof(unsigned int));
 		HuffmanTree *hft_HDIST = createHFTree();
+		printf("\n3ª árvore:\n");
 		huffman_codes((hdist+1 + (30-(hdist+1))), hdist_lens, HDIST_codes, max_in_array(30, hdist_lens), hft_HDIST);
-		/*for(i = 0; i<hdist + 1; i++) {
-			printf("%d - %d -  %d \n", i,  hdist_lens[i], HDIST_codes[i]);
-		}*/
+
 
 		//7º ex
 		lz77(hft_HLIT, hft_HDIST, &rb, &availBits, string, gzFile);
@@ -158,15 +153,7 @@ int main(int argc, char** argv)
 }
 //---------------------------------------------------------------
 //L� o cabe�alho do ficheiro gzip: devolve erro (-1) se o formato for inv�lidodevolve, ou 0 se ok
-int max_in_array(int len, unsigned int array[]) {
-	int x = array[0];
-	for (int i = 0; i< len; i++) {
-		if(array[i] > x) {
-			x = array[i];
-		}
-	}
-	return x;
-}
+
 
 int getHeader(FILE *gzFile, gzipHeader *gzh) //obt�m cabe�alho
 {
@@ -355,17 +342,6 @@ void bits2String(char *strBits, unsigned char byte) {
 	}
 }
 //------------------------------------------------
-//get 1 more byte if neccessary
-void get_byte_from_block(unsigned int *rb, char *availBits, char needBits, FILE *gzFile) {
-	unsigned char byte;
-	while ((*availBits) < needBits)
-	{
-		fread(&byte, 1, 1, gzFile);
-		*rb = (byte << (*availBits)) | *rb; //shift para acrescentar (n availBits) zeros e faz ou com os bits anteriores
-		(*availBits) += 8;
-	}
-}
-
 void read_block(unsigned int *rb, char *availBits, FILE *gzFile, char *hlit, char *hdist, char *hclen) {
 	//Leitura do HLIT
 	char needBits = 5; // hlit sao 5 bits
@@ -407,22 +383,29 @@ int store_array(unsigned int *rb, char *availBits, char hclen, unsigned int *cod
     return maxbits;
 }
 
+int max_in_array(int len, unsigned int array[]) {
+	int x = array[0];
+	for (int i = 0; i< len; i++) {
+		if(array[i] > x) {
+			x = array[i];
+		}
+	}
+	return x;
+}
+
 char* toBinary(int n, int length) {
 	int i;
   std::string str;
   while(n!=0) {str=(n%2==0 ?"0":"1")+str; n/=2;}
 	char * writable = new char[length + 1];
-	//char * writable = new char[str.size() + 1];
 	for(i =0; i<str.size(); i++) {
 		writable[length-str.size()+i] = str.at(i);
 	}
-	//std::copy(str.begin(), str.end(), writable);
 	for(i=0; i<length-str.size(); i++) {
 		writable[i] = '0';
 	}
-	writable[length] = '\0'; // don't forget the terminating 0
+	writable[length] = '\0';
 
-	// don't forget to free the string after finished using it
   return writable;
 }
 
@@ -440,7 +423,6 @@ void huffman_codes (int len, unsigned int *code_lengths, unsigned int *codes, in
   }
 	for(i = 0; i < len; i++) {
 		if(code_lengths[i] != 0){
-			//printf("%d-codes %d-%d-%s\n\n",i,code_lengths[i], codes[i],  toBinary(codes[i], code_lengths[i]));
 			addNode(hft, toBinary(codes[i], code_lengths[i]), i, 1);
 		}
 	}
@@ -501,12 +483,9 @@ void get_lengths(HuffmanTree* ht, unsigned int *rb, char *availBits, int size, F
 				}
 			resetCurNode (ht);
 			break;
-		    	}
+		  }
 		}
 	}
-	/*for(i = 0; i<size; i++) {
-		printf("[%d] - %d\n", i, codes[i]);
-	}*/
 }
 
 void lz77(HuffmanTree *ht_LIT, HuffmanTree *ht_DIST, unsigned int *rb, char* availBits, char *string, FILE *gzFile) {
@@ -521,15 +500,17 @@ void lz77(HuffmanTree *ht_LIT, HuffmanTree *ht_DIST, unsigned int *rb, char* ava
 	1025, 1537, 2049, 3073, 4097,
 	6145, 8193, 12289, 16385, 24577
 	};
-	int i, pos, bits, index = 0, debug = 0, debug2 = 0;
+	unsigned int mask;
+	int i, pos, bits, index = 0;
 	while(1){
-		debug++;
-		bits=readNbits(1,availBits,rb,gzFile);
+		get_byte_from_block(rb, availBits, 1, gzFile);
+		bits=*rb & 0x01;
+		*rb = *rb>>1;
+		(*availBits)--;
 		pos=nextNode(ht_LIT,'0'+bits);
 		if (pos >=-1){
 			if (pos<256){
 				string[index++]=pos;
-				printf("-> %c\n",string[index-1]);
 			}
 			else if(pos==256){
 				break;
@@ -540,7 +521,15 @@ void lz77(HuffmanTree *ht_LIT, HuffmanTree *ht_DIST, unsigned int *rb, char* ava
 						length = pos - 254;
 				}
 				else if(pos<285){
-					bits=readNbits((pos-261)/4,availBits,rb,gzFile);
+					get_byte_from_block(rb, availBits, (pos-261)/4, gzFile);
+					mask = 0;
+					for(int i=0; i<((pos-261)/4); i++){
+			        mask = mask << 1;
+			        mask = mask | 0x01;
+			    }
+					bits=*rb & mask;
+					*rb = *rb>>((pos-261)/4);
+					(*availBits) -= (pos-261)/4;
 					length = bits + extra_length[pos - 265];
 				}
 				else{
@@ -548,18 +537,27 @@ void lz77(HuffmanTree *ht_LIT, HuffmanTree *ht_DIST, unsigned int *rb, char* ava
 				}
 				int dist;
 				while(1){
-					bits=readNbits(1,availBits,rb,gzFile);
+					get_byte_from_block(rb,availBits,1,gzFile);
+					bits=*rb & 0x1;
+					*rb = *rb >> 1;
+					(*availBits) --;
 					pos=nextNode(ht_DIST,'0'+bits);
 					if (pos>=0){
 						dist=pos+1;
 						if (pos>3){
-							bits=readNbits((pos-2)/2, availBits, rb, gzFile);
+							get_byte_from_block(rb, availBits, (pos-2)/2, gzFile);
+							mask = 0;
+							for(int i=0; i<((pos-2)/2); i++){
+					        mask = mask << 1;
+					        mask = mask | 0x01;
+					    }
+							bits=*rb & mask;
+							*rb = *rb >> ((pos-2)/2);
+							(*availBits) -= ((pos-2)/2);
 							dist = bits + extra_dist[pos - 4] + 1;
 						}
-						printf("length: %d\ndist: %d\n",length, dist);
 						for(i=0; i<length; i++){
 							string[index+i] = string[index-dist+i+1];
-							printf("pos+i: %d, distancia a recuar: %d, cara: %c\n", index+i, dist, string[index-dist+i]);
 						}
 						index += length;
 						break;
@@ -571,36 +569,15 @@ void lz77(HuffmanTree *ht_LIT, HuffmanTree *ht_DIST, unsigned int *rb, char* ava
 		resetCurNode(ht_DIST);
 		}
 	}
-	/*«for(i = 0; i<100; i++) {
-		printf("%c\n",string[i]);
-	}*/
 }
 
-int readNbits(int nbits, char* availBits, unsigned int* rb, FILE* gzFile){
-
-    unsigned char byte;
-    if(nbits <= 0)
-        return 0;
-
-    //caso não existam bits suficientes para ler, vai ler mais um byte do ficheiro
-    while (*availBits < nbits)
-    {
-        fread(&byte, 1, 1, gzFile);
-        *rb = (byte << *availBits) | *rb;
-        *availBits += 8;
-    }
-
-    //criar uma mascara com N bits
-    unsigned int m=0;
-    for(int i=0; i<nbits; i++){
-        m = m << 1;
-        m = m | 0x01;
-    }
-    unsigned int bits = *rb & m;
-
-    //descarta os bits lidos
-    *rb = *rb >> nbits;
-    *availBits -= nbits;
-
-    return bits;
+//get 1 more byte if neccessary
+void get_byte_from_block(unsigned int *rb, char *availBits, char needBits, FILE *gzFile) {
+	unsigned char byte;
+	while ((*availBits) < needBits)
+	{
+		fread(&byte, 1, 1, gzFile);
+		*rb = (byte << (*availBits)) | *rb; //shift para acrescentar (n availBits) zeros e faz ou com os bits anteriores
+		(*availBits) += 8;
+	}
 }
